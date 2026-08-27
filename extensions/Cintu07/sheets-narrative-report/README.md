@@ -83,7 +83,7 @@ curl -X POST https://api.superdocs.app/v1/agents/signup \
 run the tests, which need no key and spend no operations:
 
 ```bash
-.venv/bin/python -m pytest        # 168 tests, offline
+.venv/bin/python -m pytest        # 207 tests, offline
 ```
 
 serve the api the add-on talks to:
