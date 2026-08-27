@@ -181,11 +181,27 @@ class TestUngroundedQuantityWords:
 
     def test_ordinary_prose_is_left_alone(self, facts):
         r = substitute(
+            "<p>Revenue reached {{fact:rev.total}} in {{fact:period}}, ahead of "
+            "the prior period.</p>",
+            facts,
+        )
+        assert find_ungrounded_quantity_words(r) == []
+
+    def test_a_pattern_claim_is_no_longer_treated_as_ordinary_prose(self, facts):
+        """This test used to assert the opposite, and it was wrong.
+
+        "the fourth consecutive quarter of growth" reads like harmless prose,
+        which is exactly why it slipped through: the figures around it are
+        grounded, so the sentence looks checked. The claim that the growth ran
+        for four quarters was never verified against anything. It is a claim
+        about the data and it needs a fact behind it, like any other.
+        """
+        r = substitute(
             "<p>Revenue reached {{fact:rev.total}} in {{fact:period}}, the fourth "
             "consecutive quarter of growth.</p>",
             facts,
         )
-        assert find_ungrounded_quantity_words(r) == []
+        assert [v.text for v in find_ungrounded_quantity_words(r)] == ["consecutive"]
 
     def test_words_inside_markup_are_ignored(self, facts):
         r = substitute('<p class="materially-wide">{{fact:rev.total}}</p>', facts)

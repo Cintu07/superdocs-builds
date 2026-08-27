@@ -4,40 +4,7 @@ turn a selected range in google sheets into a written finance report, on the
 firm template, with a chart, where **every number in the prose is substituted
 from a cell and nothing else is**.
 
-built by **pawan** for the superdocs round 2 task, against the superdocs api.
-
-![the review sidebar in google sheets](docs/screenshot.png)
-
----
-
-## what it looks like running
-
-a real run against the live api, three passes over the same range:
-
-```
-RUN 1, draft the report from the selected range
-  operations spent : 1
-  narrative source : model
-  ! Treated the "FY total" column as a total, not a period, so period-over-period
-    figures compare the last two real periods.
-  [create] Summary: Subscription revenue closed Q4 at $2,388,000, having
-           increased materially. Services revenue decreased over the period.
-
-RUN 2, Q4 subscription revenue restated, wording still holds
-  1 kept, 2 re-substituted, 0 rewritten, 0 operation(s) to spend
-  untouched sections byte-identical: True
-  operations spent on this update  : 0
-
-RUN 3, Q4 subscription revenue collapses, wording must change
-  1 kept, 1 re-substituted, 1 rewritten, 1 operation(s) to spend
-  [regenerate] Performance: wording depends on a fact whose text changed
-               (series.subscription_revenue.direction)
-```
-
-run 2 is the one that matters. a figure moved, the sentence still read
-correctly, so it was re-substituted locally through the non-ai save endpoint and
-**cost nothing**. run 3 moved the figure far enough that "increased" became
-"decreased", so exactly one section was rewritten.
+built by pawan for the superdocs round 2 task, against the superdocs api.
 
 ---
 
@@ -215,6 +182,13 @@ false alarms are how a findings list gets ignored.
 **growth from zero is not a percentage.** no `delta_pct` fact is produced, so the
 narrative has to describe the move in words instead of printing infinity.
 
+**a claim about a pattern is a claim.** the model once wrote "the fourth
+consecutive period of growth". the figure was grounded and correct; the claim
+that the growth ran for four periods was its own inference and nothing checked
+it. grounding every number is not sufficient on its own. runs are now computed
+as a `streak` fact, and words like "consecutive", "consistently" and "every
+quarter" are reported when the model types them itself.
+
 ---
 
 ## honest limits
@@ -275,17 +249,10 @@ src/narrative_report/
   template.py      the firm letterhead
   api.py           the http surface apps script calls
 apps_script/       the sheets add-on
-tests/             168 tests, no key required
+tests/             207 tests, no key required
 scripts/demo.py    live end to end demo
 ```
 
 ---
 
 built for the superdocs round 2 task by pawan.
-
-
----
-
-## license and credit
-
-MIT, per this repository. built by pawan for the superdocs round 2 hiring task.

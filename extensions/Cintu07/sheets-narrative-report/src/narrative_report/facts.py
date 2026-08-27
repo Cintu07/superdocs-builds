@@ -491,6 +491,19 @@ def derive_facts(table: Table) -> FactSet:
                     )
                 )
 
+        streak = describe_streak(s.present)
+        if streak:
+            facts.append(
+                Fact(
+                    key=f"{prefix}.streak",
+                    value=streak,
+                    unit="text",
+                    label=f"{s.label}: the run of consecutive moves ending at the latest period",
+                    provenance=f"consecutive period-over-period signs across {s.row_a1}",
+                    fmt="text",
+                )
+            )
+
     facts += _mover_facts(table)
     facts += _headline_facts(table)
     return FactSet(facts)
@@ -527,6 +540,52 @@ def _headline_facts(table: Table) -> list[Fact]:
             fmt="text",
         )
     ]
+
+
+_ORDINALS = {
+    2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth",
+    7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth", 11: "eleventh",
+    12: "twelfth",
+}
+
+
+def describe_streak(values: list[Decimal]) -> str | None:
+    """How many consecutive periods have moved the same way, in words.
+
+    This exists because of a real failure. The model wrote "marking the fourth
+    consecutive period of growth" on its own: the figure it used was grounded,
+    but the *claim that the growth was consecutive* was its own inference and
+    nothing checked it. Grounding numbers is not enough if the sentence around
+    them can still assert a pattern that was never verified.
+
+    So the pattern becomes a fact too, computed by walking backwards from the
+    latest period. Returns ``None`` when there is no run to describe, which
+    leaves the model with no token and therefore nothing it is allowed to say.
+    """
+    if len(values) < 3:
+        return None  # two points is a change, not a trend
+
+    deltas = [b - a for a, b in zip(values, values[1:], strict=False)]
+    last = deltas[-1]
+    if last == 0:
+        return None
+
+    rising = last > 0
+    run = 0
+    for delta in reversed(deltas):
+        if (delta > 0) == rising and delta != 0:
+            run += 1
+        else:
+            break
+
+    if run < 2:
+        return None  # a single move is not a run
+
+    word = "growth" if rising else "decline"
+    ordinal = _ORDINALS.get(run)
+    if ordinal is None:
+        return f"part of a long unbroken run of {word}"
+    return f"the {ordinal} consecutive period of {word}"
 
 
 def magnitude_band(pct: Decimal) -> str:

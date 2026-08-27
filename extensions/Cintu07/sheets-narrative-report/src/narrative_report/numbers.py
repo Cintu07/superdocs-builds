@@ -219,16 +219,25 @@ _QUANTITY_WORDS = re.compile(
     r"\b(materiall?y|sharply|modestly|slightly|significantly|substantially|dramatically"
     r"|marginally|steeply|strongly|markedly|considerably|notably|roughly|approximately"
     r"|about|nearly|almost|around|surged|plummeted|soared|collapsed|spiked"
-    r"|doubled|tripled|halved)\b",
+    r"|doubled|tripled|halved"
+    # Claims about a pattern across periods, not about one figure. Grounding
+    # every number is not enough on its own: "revenue reached $2,388,000,
+    # marking the fourth consecutive period of growth" has a correct figure
+    # wrapped in an assertion nobody checked. The streak fact exists so the
+    # model has a grounded way to say this, and these words catch it saying it
+    # any other way.
+    r"|consecutive|consistently|steadily|uninterrupted|unbroken|every\s+quarter"
+    r"|every\s+period|each\s+quarter|trend|trending|streak|momentum|reversal"
+    r"|continues?\s+to|year\s+on\s+year|quarter\s+on\s+quarter)\b",
     re.IGNORECASE,
 )
 
 
 def find_ungrounded_quantity_words(rendered: Rendered) -> list[Violation]:
-    """Size and direction words in the prose that did not come from a fact.
+    """Claims about size, direction or pattern that did not come from a fact.
 
-    Reported as findings rather than hard failures: unlike a wrong number, an
-    ungrounded adjective is a judgement the reviewer may well accept. But they
+    Reported as findings rather than hard failures: unlike a wrong number, a
+    qualitative claim is a judgement the reviewer may well accept. But they
     should be told it is the model's word and not the sheet's.
     """
     text = rendered.text
